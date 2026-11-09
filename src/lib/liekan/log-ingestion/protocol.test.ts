@@ -87,6 +87,21 @@ describe('automatic log wire protocol', () => {
     expect(a.records[0].id).not.toBe(a.records[1].id);
     expect(a.rejected).toBe(1);
   });
+  it('accepts the configured domain and its www host, but rejects other subdomains', () => {
+    const result = normalizeAutomatic(
+      'cloudflare',
+      source,
+      [
+        cf('2026-10-04T02:00:00Z'),
+        { ...cf('2026-10-04T02:00:01Z'), ClientRequestHost: 'www.example.com' },
+        { ...cf('2026-10-04T02:00:02Z'), ClientRequestHost: 'other.example.com' },
+      ],
+      'example.com',
+      'secret',
+    );
+    expect(result.records).toHaveLength(2);
+    expect(result.rejected).toBe(1);
+  });
   it('rejects foreign hosts, missing mandatory fields and fabricated status/IP', () => {
     const a = normalizeAutomatic(
       'cloudflare',

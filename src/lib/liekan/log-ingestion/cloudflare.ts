@@ -17,7 +17,7 @@ import {
   validateSource,
   type LogSource,
 } from './service';
-import { hostname } from './protocol';
+import { cloudflareHosts, hostname } from './protocol';
 import { newToken, tokenHash, sealPlatformSecret, openPlatformSecret } from './secrets';
 import { enqueue, PROVIDER_QUEUE } from './queue';
 import { getLogCapabilities } from './capabilities';
@@ -425,7 +425,13 @@ export function logpushConfiguration(source: LogSource, config: Provider, epoch:
     filter: JSON.stringify({
       where: {
         and: [
-          { key: 'ClientRequestHost', operator: 'eq', value: source.domain },
+          {
+            or: cloudflareHosts(source.domain).map(value => ({
+              key: 'ClientRequestHost',
+              operator: 'eq',
+              value,
+            })),
+          },
           { key: 'ClientRequestSource', operator: 'eq', value: 'eyeball' },
         ],
       },
@@ -653,7 +659,7 @@ export async function maintainCloudflare(
       );
       job.enabled = shouldEnable;
     }
-    if (job.destination_conf !== definition.destination_conf)
+    if (job.destination_conf !== definition.destination_conf || job.filter !== definition.filter)
       await cloudflareApi(
         config.accessToken,
         `/zones/${config.zoneId}/logpush/jobs/${job.id}`,

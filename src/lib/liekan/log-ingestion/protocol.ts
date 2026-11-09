@@ -32,6 +32,13 @@ export const uploadSchema = z.strictObject({
 });
 export const hostname = (domain: string) =>
   new URL(domain.includes('://') ? domain : `https://${domain}`).hostname.toLowerCase();
+export const cloudflareHosts = (domain: string) => {
+  const configured = hostname(domain);
+  const alternate = configured.startsWith('www.')
+    ? configured.slice(4)
+    : `www.${configured}`;
+  return [configured, alternate];
+};
 export interface AutomaticRecord extends LogRecord {
   identityEvidence?: RequestIdentityEvidence;
   eventDigest: string;
@@ -78,7 +85,7 @@ export function normalizeAutomatic(
         const e = raw as Record<string, unknown>;
         if (
           !e ||
-          hostname(String(e.ClientRequestHost)) !== hostname(domain) ||
+          !cloudflareHosts(domain).includes(hostname(String(e.ClientRequestHost))) ||
           e.ClientRequestSource !== 'eyeball'
         )
           throw new Error();

@@ -20,5 +20,9 @@ it('keeps existing log fields and adds only the selected available crawler evide
   expect(fields).not.toContain('SecurityRuleIDs');
   expect(fields).not.toContain('CacheCacheStatus');
   expect(old.filter).toContain('example.com');
+  expect(JSON.parse(old.filter).where.and[0].or).toEqual([
+    { key: 'ClientRequestHost', operator: 'eq', value: 'example.com' },
+    { key: 'ClientRequestHost', operator: 'eq', value: 'www.example.com' },
+  ]);
   expect(old.output_options.timestamp_format).toBe('rfc3339ns');
 });
